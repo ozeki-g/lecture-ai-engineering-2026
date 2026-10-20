@@ -13,7 +13,7 @@
 import argparse
 
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 
 from app.config import MODEL, api_error_message, get_api_key
 
@@ -23,10 +23,16 @@ DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何�
 
 def ask(question: str) -> str:
     client = genai.Client(api_key=get_api_key())
-    response = client.models.generate_content(model=MODEL, contents=question)
+    response = client.models.generate_content(model=MODEL,
+                                               contents=question,
+                                               config = types.GenerateContentConfig(
+        temperature=0.2))
 
-    # TODO(第1回 演習): response.usage_metadata から
-    #   入力トークン数と出力トークン数を表示してみよう（Copilotに頼んでよい）
+    usage = response.usage_metadata
+    print(
+        f"[usage] input_tokens={usage.prompt_token_count}, "
+        f"output_tokens={usage.candidates_token_count}"
+    )
 
     return response.text
 
