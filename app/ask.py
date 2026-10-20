@@ -13,7 +13,7 @@
 import argparse
 
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 
 from app.config import MODEL, api_error_message, get_api_key
 
@@ -23,7 +23,10 @@ DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何�
 
 def ask(question: str) -> str:
     client = genai.Client(api_key=get_api_key())
-    response = client.models.generate_content(model=MODEL, contents=question)
+    response = client.models.generate_content(model=MODEL,
+                                               contents=question,
+                                               config = types.GenerateContentConfig(
+        temperature=0.2))
 
     usage = response.usage_metadata
     print(
