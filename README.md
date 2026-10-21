@@ -30,6 +30,31 @@ uv run pytest -q
 uv run python -m app.ask "LoRAとは何ですか？"
 ```
 
+前の質問を踏まえて続けて質問したいときは、`--interactive` を指定します。`quit` または
+`exit` を入力すると終了します。
+
+```bash
+uv run python -m app.ask --interactive "LoRAとは何ですか？"
+```
+
+各応答のあとに応答時間、入出力トークン数、この実行中の累計値を表示します。トークン数は
+無料枠の TPM（トークン数）に、リクエスト数は RPM/RPD（分・日あたりのリクエスト数）に
+関係します。無料枠の上限や残量はモデル・アカウントごとに異なり、プログラムから正確には
+判定できないため、Google AI Studio の使用量画面で確認してください。
+
+複数モデルと複数質問の比較は、組み合わせを指定して実行します。次の例では 2 モデル ×
+2 質問の計 4 回 API を呼び出し、応答時間・入出力トークン数・回答を比較します。
+
+```bash
+uv run python -m app.ask \
+  --compare-models gemini-3.5-flash-lite gemini-3.5-flash \
+  --compare-questions "LoRAとは何ですか？" "QLoRAとの違いは？"
+```
+
+比較の各組み合わせは新しいチャットとして実行するため、モデル間で会話履歴の長さが
+変わる影響を避けられます。モデル数 × 質問数だけリクエストが発生し、各モデルの
+RPM/TPM/RPD の無料枠を消費します。
+
 詳しい手順は [lectures/01/problem.md](lectures/01/problem.md) を見てください。
 
 ## 構成
