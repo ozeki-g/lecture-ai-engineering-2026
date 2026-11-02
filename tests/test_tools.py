@@ -39,6 +39,34 @@ def test_lecture_summary():
     assert "まだありません" in tools.get_lecture_summary(99)
 
 
+def test_make_quiz_returns_term_question_and_answer(monkeypatch):
+    monkeypatch.setattr(tools.random, "choice", lambda terms: terms[0])
+
+    quiz = json.loads(tools.make_quiz(2))
+    expected_term = next(term for term in tools.load_glossary() if term["lecture"] == 2)
+
+    assert quiz["question"] == f"「{expected_term['term']}」の意味は？"
+    assert quiz["answer"]
+
+
+def test_make_quiz_reports_missing_lecture():
+    assert "第0回の用語は見つかりませんでした" in tools.make_quiz(0)
+
+
+def test_save_learning_log_writes_json(monkeypatch, tmp_path):
+    monkeypatch.setattr(tools, "LEARNING_LOG_DIR", tmp_path)
+
+    message = tools.save_learning_log({"question": "LoRAとは？", "progress": "理解した"})
+
+    files = list(tmp_path.glob("*.json"))
+    assert len(files) == 1
+    assert json.loads(files[0].read_text(encoding="utf-8")) == {
+        "question": "LoRAとは？",
+        "progress": "理解した",
+    }
+    assert str(files[0]) in message
+
+
 def test_default_question_of_lecture1_is_answerable_from_glossary():
     """第1回の既定の質問（app.ask）は、第3回のエージェントが用語集で正しく答えられること。"""
     from app.ask import DEFAULT_QUESTION
