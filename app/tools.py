@@ -6,6 +6,7 @@
 
 import json
 import random
+from collections.abc import Callable
 from datetime import datetime, timezone
 from functools import cache
 from pathlib import Path
@@ -112,3 +113,17 @@ def save_learning_log(log: dict) -> str:
     path = LEARNING_LOG_DIR / f"{timestamp}.json"
     path.write_text(json.dumps(log, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return f"学習ログを保存しました: {path}"
+
+
+def save_answer_with_approval(
+    question: str,
+    answer: str,
+    input_fn: Callable[[str], str] = input,
+) -> str:
+    """質問と回答を、利用者の承認後に学習ログとして保存する。"""
+    approval = input_fn(
+        "\nこの質問と回答を学習ログに保存しますか？ [y/N]: "
+    ).strip().casefold()
+    if approval not in {"y", "yes", "はい"}:
+        return "学習ログは保存しませんでした。"
+    return save_learning_log({"question": question, "answer": answer})

@@ -153,6 +153,7 @@ def main() -> None:
         print(api_error_message(e.status_code, str(e.body)[:200]))
         raise SystemExit(1)
     print(result.output)
+    print(tools.save_answer_with_approval(args.question, str(result.output)))
     if args.trace:
         print_trace(result)
 

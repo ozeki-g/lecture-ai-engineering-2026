@@ -67,6 +67,37 @@ def test_save_learning_log_writes_json(monkeypatch, tmp_path):
     assert str(files[0]) in message
 
 
+def test_save_answer_with_approval_requires_confirmation(monkeypatch, tmp_path):
+    monkeypatch.setattr(tools, "LEARNING_LOG_DIR", tmp_path)
+
+    message = tools.save_answer_with_approval(
+        "LoRAとは？",
+        "低ランク適応です。",
+        lambda _: "n",
+    )
+
+    assert message == "学習ログは保存しませんでした。"
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_save_answer_with_approval_writes_question_and_answer(monkeypatch, tmp_path):
+    monkeypatch.setattr(tools, "LEARNING_LOG_DIR", tmp_path)
+
+    message = tools.save_answer_with_approval(
+        "LoRAとは？",
+        "低ランク適応です。",
+        lambda _: "はい",
+    )
+
+    files = list(tmp_path.glob("*.json"))
+    assert len(files) == 1
+    assert json.loads(files[0].read_text(encoding="utf-8")) == {
+        "question": "LoRAとは？",
+        "answer": "低ランク適応です。",
+    }
+    assert str(files[0]) in message
+
+
 def test_default_question_of_lecture1_is_answerable_from_glossary():
     """第1回の既定の質問（app.ask）は、第3回のエージェントが用語集で正しく答えられること。"""
     from app.ask import DEFAULT_QUESTION
