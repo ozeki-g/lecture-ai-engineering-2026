@@ -23,6 +23,7 @@ from google.genai.chats import Chat
 from google.genai import errors, types
 
 from app.config import MODEL, api_error_message, get_api_key
+from app.tools import save_answer_with_approval
 
 # 講座に固有の質問。正しい答えは data/glossary.json の homework-levels にある
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
@@ -181,7 +182,9 @@ def interactive_chat(
     question = initial_question
     while True:
         print(f"[質問] {question}\n")
-        print(ask_in_chat(chat, question, metrics))
+        answer = ask_in_chat(chat, question, metrics)
+        print(answer)
+        print(save_answer_with_approval(question, answer, input_fn))
         try:
             question = input_fn("\n次の質問（終了するには quit）: ").strip()
         except EOFError:
@@ -233,7 +236,9 @@ def main() -> None:
         else:
             print(f"[model] {MODEL}")
             print(f"[質問] {args.question}\n")
-            print(ask(args.question))
+            answer = ask(args.question)
+            print(answer)
+            print(save_answer_with_approval(args.question, answer))
     except errors.APIError as e:
         print(api_error_message(e.code, e.message))
         raise SystemExit(1)

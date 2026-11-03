@@ -5,10 +5,14 @@
 """
 
 import json
+import random
+from collections.abc import Callable
+from datetime import datetime, timezone
 from functools import cache
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+LEARNING_LOG_DIR = DATA_DIR.parent / "learning_log"
 MAX_RESULTS = 3
 
 
@@ -77,3 +81,49 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+
+def make_quiz(lecture: int) -> str:
+    """指定した回の講義内容に基づいたクイズを作る。
+    指定した回の用語から1つを選択し、問題文と正解のペアのリストを返す。
+    「第3回の確認問題を出して」のように、問題の作成を求められた際に使う。
+    """
+    terms = [term for term in load_glossary() if term["lecture"] == lecture]
+    if not terms:
+        available = sorted({term["lecture"] for term in load_glossary()})
+        return f"第{lecture}回の用語は見つかりませんでした。用意されている回: {', '.join(map(str, available))}"
+
+    term = random.choice(terms)
+    return json.dumps(
+        {
+            "question": f"「{term['term']}」の意味は？",
+            "answer": term["definition"],
+        },
+        ensure_ascii=False,
+    )
+
+def save_learning_log(log: dict) -> str:
+    """学習ログを保存する。
+    学習の進捗や、モデルがどのような質問をしたかなどを記録するために使う。
+    学習の記録をlearning_log/フォルダにJSON形式で保存する。
+    保存するかどうかは、毎回利用者の確認を挟み、了承が得られた場合にのみ保存する。
+    """
+    LEARNING_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    path = LEARNING_LOG_DIR / f"{timestamp}.json"
+    path.write_text(json.dumps(log, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return f"学習ログを保存しました: {path}"
+
+
+def save_answer_with_approval(
+    question: str,
+    answer: str,
+    input_fn: Callable[[str], str] = input,
+) -> str:
+    """質問と回答を、利用者の承認後に学習ログとして保存する。"""
+    approval = input_fn(
+        "\nこの質問と回答を学習ログに保存しますか？ [y/N]: "
+    ).strip().casefold()
+    if approval not in {"y", "yes", "はい"}:
+        return "学習ログは保存しませんでした。"
+    return save_learning_log({"question": question, "answer": answer})

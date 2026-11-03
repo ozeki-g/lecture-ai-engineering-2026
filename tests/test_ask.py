@@ -33,7 +33,7 @@ def test_interactive_chat_reuses_the_same_chat(monkeypatch, capsys):
     chat = FakeChat()
     monkeypatch.setattr(ask.genai, "Client", lambda **kwargs: FakeClient(chat))
 
-    questions = iter(["それは何に使いますか？", "quit"])
+    questions = iter(["y", "それは何に使いますか？", "y", "quit"])
     ask.interactive_chat("LoRAとは何ですか？", lambda _: next(questions))
 
     assert chat.questions == ["LoRAとは何ですか？", "それは何に使いますか？"]
@@ -42,6 +42,25 @@ def test_interactive_chat_reuses_the_same_chat(monkeypatch, capsys):
     assert "[metrics] response_time=" in output
     assert "[session] requests=2" in output
     assert "[rate-limit]" in output
+
+
+def test_interactive_chat_saves_each_answer_after_approval(monkeypatch):
+    chat = FakeChat()
+    monkeypatch.setattr(ask.genai, "Client", lambda **kwargs: FakeClient(chat))
+    saved = []
+    monkeypatch.setattr(
+        ask,
+        "save_answer_with_approval",
+        lambda question, answer, input_fn: saved.append((question, answer)) or "saved",
+    )
+
+    questions = iter(["それは何に使いますか？", "quit"])
+    ask.interactive_chat("LoRAとは何ですか？", lambda _: next(questions))
+
+    assert saved == [
+        ("LoRAとは何ですか？", "回答: LoRAとは何ですか？"),
+        ("それは何に使いますか？", "回答: それは何に使いますか？"),
+    ]
 
 
 def test_ask_sends_a_single_question(monkeypatch):
