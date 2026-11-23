@@ -15,3 +15,6 @@ learning_log/
 
 # 第5回: 資料から再生成する検索DB
 .cache/rag/
+
+# ローカル設定
+.vscode/
